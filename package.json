@@ -1,0 +1,13 @@
+{
+  "name": "bilibili-video-podcast-radar",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "update-data": "node scripts/fetch-bilibili.mjs",
+    "serve": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

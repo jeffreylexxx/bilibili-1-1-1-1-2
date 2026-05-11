@@ -1,0 +1,35 @@
+# BILIBILI 长视频播客研究站
+
+这是一个可直接上传到 GitHub 的静态分析网站，用来跟踪 B 站半小时以上、以多人坐谈/访谈/视频播客为主的长视频内容。
+
+## 功能
+
+- 每天自动搜索 B 站视频播客相关关键词。
+- 过滤 30 分钟及以上内容。
+- 记录频道粉丝数、视频播放量、互动量与每日快照。
+- 按内容类型、嘉宾行业、时长段、原创/搬运字幕类进行启发式分类。
+- 识别爆款视频，并给出可能的爆款原因。
+- 在页面末尾用次要模块比较你的播客定位：大学教授、商业公司高管、在上海工作的外国人，行业聚焦科技、AI、数字制造、社会研究、媒体。
+
+## 本地运行
+
+```bash
+npm run update-data
+npm run serve
+```
+
+打开 `http://localhost:4173`。
+
+也可以直接双击打开 `index.html`。项目会优先读取 `public/data/site-data.js`，所以即使浏览器禁止 `file://` 页面读取 JSON，也能展示最近一次生成的数据。
+
+## 上传 GitHub 后每天自动更新
+
+1. 把整个目录推到 GitHub 仓库。
+2. 在仓库设置里开启 GitHub Pages，选择 GitHub Actions 部署。
+3. `.github/workflows/daily-update.yml` 会每天北京时间 08:20 运行一次，更新 `data/history/`、`public/data/site-data.json` 与 `public/data/site-data.js`，然后部署静态页面。
+
+如果 GitHub Actions 运行时遇到 B 站 412 风控，可以在仓库 `Settings -> Secrets and variables -> Actions` 增加一个名为 `BILI_COOKIE` 的 secret，填入你浏览器访问 B 站时的 Cookie。脚本会自动使用它，并且在当日搜索完全失败时保留已有快照，避免网站被空数据覆盖。
+
+## 数据口径
+
+这个项目使用 B 站公开网页接口进行关键词搜索和频道粉丝数查询。分类、原创/搬运判断、嘉宾行业判断均为关键词启发式，适合做选题和时长判断的趋势参考，不等同于人工审计结果。粉丝增长和播放增长依赖每日快照积累，首次运行只能展示当前截面。

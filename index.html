@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BILIBILI 长视频播客雷达</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">BILIBILI VIDEO PODCAST RADAR</p>
+        <h1>B站长视频播客研究</h1>
+      </div>
+      <div class="status">
+        <span id="data-date">读取中</span>
+        <span id="data-note">每日自动更新</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="definition-band">
+        <div>
+          <h2>研究口径</h2>
+          <p>
+            样本聚焦半小时及以上、以视频形式出现的多人坐谈、访谈、圆桌、视频播客内容。页面展示频道规模、播放表现、增长快照、爆款视频、嘉宾行业、时长结构，以及原创/搬运字幕类内容的结构差异。
+          </p>
+        </div>
+        <div class="pipeline">
+          <span>搜索</span>
+          <span>过滤</span>
+          <span>分类</span>
+          <span>快照</span>
+          <span>分析</span>
+        </div>
+      </section>
+
+      <section class="metrics-grid" id="metrics"></section>
+
+      <section class="split">
+        <article class="panel">
+          <div class="section-head">
+            <h2>内容分类</h2>
+            <p>按播放贡献排序</p>
+          </div>
+          <div id="category-chart" class="bar-chart"></div>
+        </article>
+        <article class="panel">
+          <div class="section-head">
+            <h2>时长结构</h2>
+            <p>半小时以上节目分布</p>
+          </div>
+          <div id="length-chart" class="bar-chart compact"></div>
+        </article>
+      </section>
+
+      <section class="split">
+        <article class="panel">
+          <div class="section-head">
+            <h2>嘉宾行业</h2>
+            <p>根据标题、简介、标签识别</p>
+          </div>
+          <div id="guest-chart" class="bar-chart"></div>
+        </article>
+        <article class="panel">
+          <div class="section-head">
+            <h2>原创与搬运</h2>
+            <p>启发式判断，仅作趋势参考</p>
+          </div>
+          <div id="originality-chart" class="bar-chart compact"></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>爆款视频</h2>
+          <p>播放量进入样本头部或互动密度突出的节目</p>
+        </div>
+        <div id="hot-videos" class="hot-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>频道竞争格局</h2>
+          <p>按样本内长播客播放贡献排序</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>频道</th>
+                <th>主内容</th>
+                <th>样本视频</th>
+                <th>粉丝</th>
+                <th>样本播放</th>
+                <th>均播</th>
+                <th>粉丝增长</th>
+              </tr>
+            </thead>
+            <tbody id="channel-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head with-controls">
+          <div>
+            <h2>视频样本库</h2>
+            <p>可按类型、原创性、时长筛选</p>
+          </div>
+          <div class="filters">
+            <select id="category-filter" aria-label="内容分类"></select>
+            <select id="originality-filter" aria-label="原创性"></select>
+            <select id="length-filter" aria-label="时长"></select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>视频</th>
+                <th>频道</th>
+                <th>分类</th>
+                <th>嘉宾行业</th>
+                <th>时长</th>
+                <th>播放</th>
+                <th>增长</th>
+              </tr>
+            </thead>
+            <tbody id="video-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="split">
+        <article class="panel">
+          <div class="section-head">
+            <h2>增长监测</h2>
+            <p>从第二次每日快照开始显示</p>
+          </div>
+          <div id="growth-view" class="growth-list"></div>
+        </article>
+        <article class="panel">
+          <div class="section-head">
+            <h2>研究结论</h2>
+            <p>用于选题、嘉宾和时长判断</p>
+          </div>
+          <div id="insights" class="insights"></div>
+        </article>
+      </section>
+
+      <section class="own-section">
+        <div class="section-head">
+          <h2>你的播客竞争力比较</h2>
+          <p>作为次要参照组，放在全站研究之后</p>
+        </div>
+        <div id="own-benchmark" class="own-grid"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p id="source-note"></p>
+    </footer>
+
+    <script src="./public/data/site-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
