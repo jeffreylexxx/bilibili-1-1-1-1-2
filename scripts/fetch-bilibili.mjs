@@ -11,7 +11,8 @@ const SITE_DATA_JS = path.join(PUBLIC_DATA_DIR, "site-data.js");
 const pagesPerQuery = Number(process.env.BILI_PAGES_PER_QUERY || 2);
 const channelLimit = Number(process.env.BILI_CHANNEL_LIMIT || 140);
 const requestDelayMs = Number(process.env.BILI_REQUEST_DELAY_MS || 650);
-const minDurationSec = 30 * 60;
+const minDurationSec = 10 * 60;
+const lengthBucketOrder = ["10-30分钟", "30-60分钟", "1-1.5小时", "1.5-2小时", "2-3小时", "3小时以上"];
 
 const queries = [
   "视频播客",
@@ -99,6 +100,18 @@ function todayInShanghai() {
   }).format(new Date());
 }
 
+function timeInShanghaiForFile() {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Shanghai",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  })
+    .format(new Date())
+    .replaceAll(":", "");
+}
+
 function cleanText(value = "") {
   return String(value)
     .replace(/<[^>]+>/g, "")
@@ -126,6 +139,7 @@ function formatDuration(seconds) {
 }
 
 function lengthBucket(seconds) {
+  if (seconds < 1800) return "10-30分钟";
   if (seconds < 3600) return "30-60分钟";
   if (seconds < 5400) return "1-1.5小时";
   if (seconds < 7200) return "1.5-2小时";
@@ -191,7 +205,7 @@ async function fetchJson(url, tries = 3) {
 async function searchVideos() {
   const videos = new Map();
   for (const keyword of queries) {
-    for (const duration of [3, 4]) {
+    for (const duration of [2, 3, 4]) {
       for (let page = 1; page <= pagesPerQuery; page += 1) {
         const url = new URL("https://api.bilibili.com/x/web-interface/search/type");
         url.searchParams.set("search_type", "video");
@@ -384,14 +398,27 @@ async function readPreviousSnapshots(today) {
   return snapshots;
 }
 
+async function archiveExistingTodaySnapshot(todayPath, today) {
+  if (!existsSync(todayPath)) return;
+  try {
+    const existing = await readFile(todayPath, "utf8");
+    const archivePath = path.join(HISTORY_DIR, `${today}-${timeInShanghaiForFile()}.json`);
+    await writeFile(archivePath, existing);
+  } catch {
+    console.warn("[warn] could not archive existing snapshot before overwrite");
+  }
+}
+
 function indexPrevious(snapshots) {
   const latestVideo = new Map();
   const latestChannel = new Map();
+  let latestSnapshot = null;
   for (const snapshot of snapshots) {
+    latestSnapshot = snapshot;
     for (const video of snapshot.videos || []) latestVideo.set(video.bvid, video);
     for (const channel of snapshot.channels || []) latestChannel.set(String(channel.mid), channel);
   }
-  return { latestVideo, latestChannel };
+  return { latestVideo, latestChannel, latestSnapshot };
 }
 
 function groupCount(items, key) {
@@ -413,6 +440,38 @@ function groupViews(items, key) {
     map.set(value, current);
   }
   return [...map.values()].sort((a, b) => b.views - a.views);
+}
+
+function completeLengthBuckets(videos) {
+  const byLabel = new Map(groupCount(videos, "lengthBucket").map((item) => [item.label, item]));
+  return lengthBucketOrder.map((label) => byLabel.get(label) || { label, count: 0 });
+}
+
+function computeMetricDeltas(currentMetrics, previousSnapshot) {
+  if (!previousSnapshot) {
+    return {
+      videos: null,
+      channels: null,
+      totalViews: null,
+      medianViews: null,
+      hotThreshold: null,
+      totalFollowers: null
+    };
+  }
+  const previousVideos = (previousSnapshot.videos || []).filter((video) => video.durationSec >= minDurationSec && isLikelyTalkPodcast(video));
+  const previousChannels = buildChannelsFromExistingStats(previousVideos, previousSnapshot.channels || []);
+  const previousViews = previousVideos.map((video) => video.views || 0);
+  const previousMetrics = {
+    videos: previousVideos.length,
+    channels: previousChannels.length,
+    totalViews: previousVideos.reduce((sum, video) => sum + (video.views || 0), 0),
+    medianViews: percentile(previousViews, 0.5),
+    hotThreshold: Math.max(100000, percentile(previousViews, 0.9)),
+    totalFollowers: previousChannels.reduce((sum, channel) => sum + (channel.followers || 0), 0)
+  };
+  return Object.fromEntries(
+    Object.entries(currentMetrics).map(([key, value]) => [key, value - (previousMetrics[key] || 0)])
+  );
 }
 
 function buildInsightText(videos, channels, summaries) {
@@ -440,7 +499,7 @@ function buildInsightText(videos, channels, summaries) {
 }
 
 function buildSiteData(snapshot, previous) {
-  const { latestVideo, latestChannel } = previous;
+  const { latestVideo, latestChannel, latestSnapshot } = previous;
   const videos = snapshot.videos.map((video) => {
     const text = `${video.title} ${video.description} ${video.tag}`;
     const category = firstMatchingBucket(text, categoryRules, "其他");
@@ -481,10 +540,7 @@ function buildSiteData(snapshot, previous) {
   const summaries = {
     categories: groupViews(videos, "category"),
     guestIndustries: groupViews(videos, "guestIndustry"),
-    lengthBuckets: groupCount(videos, "lengthBucket").sort(
-      (a, b) => ["30-60分钟", "1-1.5小时", "1.5-2小时", "2-3小时", "3小时以上"].indexOf(a.label) -
-        ["30-60分钟", "1-1.5小时", "1.5-2小时", "2-3小时", "3小时以上"].indexOf(b.label)
-    ),
+    lengthBuckets: completeLengthBuckets(videos),
     originality: groupCount(videos, "originality"),
     typeNames: groupViews(videos, "typeName").slice(0, 10)
   };
@@ -498,6 +554,15 @@ function buildSiteData(snapshot, previous) {
     .sort((a, b) => b.followerGrowth - a.followerGrowth)
     .slice(0, 12);
 
+  const metrics = {
+    videos: videos.length,
+    channels: channels.length,
+    totalViews: videos.reduce((sum, video) => sum + (video.views || 0), 0),
+    medianViews: percentile(videos.map((video) => video.views || 0), 0.5),
+    hotThreshold,
+    totalFollowers: channels.reduce((sum, channel) => sum + (channel.followers || 0), 0)
+  };
+
   return {
     generatedAt: new Date().toISOString(),
     date: snapshot.date,
@@ -505,20 +570,36 @@ function buildSiteData(snapshot, previous) {
       platform: "Bilibili public web APIs",
       queryCount: queries.length,
       pagesPerQuery,
-      minDurationMinutes: 30,
+      minDurationMinutes: 10,
       note: "分类、原创/搬运、嘉宾行业为关键词启发式判断；增长数据来自历史快照。"
     },
-    metrics: {
-      videos: videos.length,
-      channels: channels.length,
-      totalViews: videos.reduce((sum, video) => sum + (video.views || 0), 0),
-      medianViews: percentile(videos.map((video) => video.views || 0), 0.5),
-      hotThreshold,
-      totalFollowers: channels.reduce((sum, channel) => sum + (channel.followers || 0), 0)
-    },
+    metrics,
+    metricDeltas: computeMetricDeltas(metrics, latestSnapshot),
     summaries,
     insights: buildInsightText(videos, channels, summaries),
     hotVideos,
+    sampleVideos: videos.map((video) => ({
+      bvid: video.bvid,
+      title: video.title,
+      author: video.author,
+      mid: video.mid,
+      url: video.url,
+      pubdate: video.pubdate,
+      durationSec: video.durationSec,
+      durationLabel: video.durationLabel,
+      lengthBucket: video.lengthBucket,
+      views: video.views || 0,
+      likes: video.likes || 0,
+      favorites: video.favorites || 0,
+      coins: video.coins || 0,
+      shares: video.shares || 0,
+      replies: video.replies || 0,
+      engagementRate: video.engagementRate,
+      category: video.category,
+      guestIndustry: video.guestIndustry,
+      originality: video.originality,
+      typeName: video.typeName
+    })),
     topChannels: channels.sort((a, b) => b.totalViews - a.totalViews).slice(0, 30),
     topVideos: videos.sort((a, b) => b.views - a.views).slice(0, 160),
     growth: {
@@ -590,6 +671,7 @@ async function main() {
     }
   }
 
+  await archiveExistingTodaySnapshot(todayPath, date);
   const previous = indexPrevious(await readPreviousSnapshots(date));
   const siteData = buildSiteData(snapshot, previous);
 
