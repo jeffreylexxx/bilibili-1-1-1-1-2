@@ -1,4 +1,5 @@
 const dataUrl = "./public/data/site-data.json";
+const dataScriptUrl = "./public/data/site-data.js";
 
 const formatNumber = (value) => {
   const number = Number(value || 0);
@@ -800,6 +801,13 @@ async function init() {
 async function loadSiteData() {
   if (window.__BILI_SITE_DATA__) return window.__BILI_SITE_DATA__;
 
+  try {
+    await loadDataScript();
+    if (window.__BILI_SITE_DATA__) return window.__BILI_SITE_DATA__;
+  } catch {
+    // Fall through to JSON fetch when running from a web server.
+  }
+
   if (window.location.protocol === "file:") {
     throw new Error("直接打开 HTML 时需要 public/data/site-data.js。请运行 npm run update-data 重新生成数据文件。");
   }
@@ -807,6 +815,17 @@ async function loadSiteData() {
   const response = await fetch(dataUrl, { cache: "no-store" });
   if (!response.ok) throw new Error("site-data.json not found. Run npm run update-data first.");
   return response.json();
+}
+
+function loadDataScript() {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    const version = Date.now();
+    script.src = `${dataScriptUrl}?v=${version}`;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
 }
 
 init().catch((error) => {
