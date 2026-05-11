@@ -1,0 +1,52 @@
+name: Daily Bilibili Podcast Radar
+
+on:
+  schedule:
+    - cron: "20 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update data
+        run: npm run update-data
+        env:
+          BILI_PAGES_PER_QUERY: 3
+          BILI_CHANNEL_LIMIT: 180
+          BILI_REQUEST_DELAY_MS: 800
+          BILI_COOKIE: ${{ secrets.BILI_COOKIE }}
+
+      - name: Commit data snapshot
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(data): update bilibili podcast snapshot"
+          file_pattern: "data/history/*.json public/data/site-data.json public/data/site-data.js"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
