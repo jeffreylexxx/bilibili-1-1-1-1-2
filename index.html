@@ -23,7 +23,7 @@
         <div>
           <h2>研究口径</h2>
           <p>
-            样本聚焦半小时及以上、以视频形式出现的多人坐谈、访谈、圆桌、视频播客内容。页面展示频道规模、播放表现、增长快照、爆款视频、嘉宾行业、时长结构，以及原创/搬运字幕类内容的结构差异。
+            样本聚焦 10 分钟及以上、以视频形式出现的多人坐谈、访谈、圆桌、视频播客内容，并重点观察半小时以上长节目。页面展示频道规模、播放表现、增长快照、爆款视频、嘉宾行业、时长结构，以及原创/搬运字幕类内容的结构差异。
           </p>
         </div>
         <div class="pipeline">
@@ -48,7 +48,7 @@
         <article class="panel">
           <div class="section-head">
             <h2>时长结构</h2>
-            <p>半小时以上节目分布</p>
+            <p>10分钟及以上节目分布</p>
           </div>
           <div id="length-chart" class="bar-chart compact"></div>
         </article>
@@ -68,6 +68,99 @@
             <p>启发式判断，仅作趋势参考</p>
           </div>
           <div id="originality-chart" class="bar-chart compact"></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <h2>统计离散度</h2>
+            <p>用方差、标准差、变异系数和头部集中度判断长播客市场是否“少数爆款拉动”</p>
+          </div>
+        </div>
+        <div id="stats-grid" class="stats-grid"></div>
+      </section>
+
+      <section class="split analysis-split">
+        <article class="panel chart-panel">
+          <div class="section-head">
+            <h2>播放量分布</h2>
+            <p>按播放区间分桶，观察腰部和长尾</p>
+          </div>
+          <div id="views-histogram" class="svg-chart"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-head">
+            <h2>爆款集中曲线</h2>
+            <p>越靠左上，说明播放越集中在少数视频</p>
+          </div>
+          <div id="lorenz-chart" class="svg-chart"></div>
+        </article>
+      </section>
+
+      <section class="split analysis-split">
+        <article class="panel chart-panel">
+          <div class="section-head">
+            <h2>时长与播放散点</h2>
+            <p>横轴为时长，纵轴为播放量对数</p>
+          </div>
+          <div id="duration-scatter" class="svg-chart tall"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-head">
+            <h2>频道规模与均播散点</h2>
+            <p>横轴为粉丝数，纵轴为样本均播，均为对数尺度</p>
+          </div>
+          <div id="channel-scatter" class="svg-chart tall"></div>
+        </article>
+      </section>
+
+      <section class="split analysis-split">
+        <article class="panel chart-panel">
+          <div class="section-head">
+            <h2>时长段表现曲线</h2>
+            <p>比较均值、中位数和 P90 播放</p>
+          </div>
+          <div id="duration-line-chart" class="svg-chart"></div>
+        </article>
+        <article class="panel chart-panel">
+          <div class="section-head">
+            <h2>发布月份曲线</h2>
+            <p>观察样本数量与月均播放变化</p>
+          </div>
+          <div id="month-line-chart" class="svg-chart"></div>
+        </article>
+      </section>
+
+      <section class="split analysis-split">
+        <article class="panel">
+          <div class="section-head">
+            <h2>内容类型效率矩阵</h2>
+            <p>样本量、均播、中位数、爆款率和互动率</p>
+          </div>
+          <div class="table-wrap">
+            <table class="analysis-table">
+              <thead>
+                <tr>
+                  <th>分类</th>
+                  <th>样本</th>
+                  <th>均播</th>
+                  <th>中位数</th>
+                  <th>P90</th>
+                  <th>爆款率</th>
+                  <th>互动率</th>
+                </tr>
+              </thead>
+              <tbody id="category-efficiency-table"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="panel">
+          <div class="section-head">
+            <h2>选题判断摘要</h2>
+            <p>从统计图提炼可执行判断</p>
+          </div>
+          <div id="advanced-insights" class="insights"></div>
         </article>
       </section>
 

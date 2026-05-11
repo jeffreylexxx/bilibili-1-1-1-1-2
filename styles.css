@@ -137,6 +137,7 @@ main {
 }
 
 .metric,
+.stat-card,
 .panel,
 .own-section {
   background: var(--panel);
@@ -147,6 +148,32 @@ main {
 
 .metric {
   padding: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat-card {
+  padding: 14px;
+  box-shadow: none;
+}
+
+.stat-card span,
+.stat-card small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.stat-card strong {
+  display: block;
+  margin: 8px 0 5px;
+  font-size: 22px;
+  line-height: 1.1;
 }
 
 .metric span,
@@ -167,6 +194,33 @@ main {
   font-size: 26px;
 }
 
+.metric-delta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  margin-top: 8px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.metric-delta.up {
+  background: rgba(20, 143, 106, 0.11);
+  color: var(--green);
+}
+
+.metric-delta.down {
+  background: rgba(204, 75, 55, 0.11);
+  color: var(--red);
+}
+
+.metric-delta.flat {
+  background: #edf1f4;
+  color: var(--muted);
+}
+
 .split {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -178,6 +232,10 @@ main {
 .own-section {
   padding: 20px;
   margin-bottom: 18px;
+}
+
+.chart-panel {
+  min-width: 0;
 }
 
 .section-head {
@@ -254,6 +312,22 @@ select {
   background: linear-gradient(90deg, var(--green), var(--blue));
 }
 
+.svg-chart {
+  width: 100%;
+  min-height: 260px;
+  overflow: hidden;
+}
+
+.svg-chart.tall {
+  min-height: 310px;
+}
+
+.svg-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .hot-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -322,6 +396,10 @@ table {
   min-width: 880px;
   border-collapse: collapse;
   font-size: 13px;
+}
+
+.analysis-table {
+  min-width: 680px;
 }
 
 th,
@@ -466,6 +544,10 @@ footer {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .hot-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -494,8 +576,15 @@ footer {
     justify-content: flex-start;
   }
 
-  .metrics-grid,
   .hot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 
