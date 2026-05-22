@@ -1,14 +1,15 @@
 # BILIBILI 长视频播客研究站
 
-这是一个可直接上传到 GitHub 的静态分析网站，用来跟踪 B 站半小时以上、以多人坐谈/访谈/视频播客为主的长视频内容。
+这是一个可直接上传到 GitHub 的静态分析网站，用来跟踪 B 站 10 分钟以上、以多人坐谈/访谈/视频播客为主的视频内容，并重点观察半小时以上的长视频播客。
 
 ## 功能
 
 - 每天自动搜索 B 站视频播客相关关键词。
-- 过滤 30 分钟及以上内容。
-- 记录频道粉丝数、视频播放量、互动量与每日快照。
+- 过滤 10 分钟及以上内容，并按 10-30 分钟、30-60 分钟、1-1.5 小时、1.5-2 小时、2-3 小时、3 小时以上分档。
+- 记录频道粉丝数、视频播放量、互动量与每日快照，并展示与上一份快照相比的变化值。
 - 按内容类型、嘉宾行业、时长段、原创/搬运字幕类进行启发式分类。
 - 识别爆款视频，并给出可能的爆款原因。
+- 增加方差、标准差、变异系数、Gini 系数、散点图、集中度曲线、时长表现曲线、发布月份曲线和内容效率矩阵。
 - 在页面末尾用次要模块比较你的播客定位：大学教授、商业公司高管、在上海工作的外国人，行业聚焦科技、AI、数字制造、社会研究、媒体。
 
 ## 本地运行
@@ -26,7 +27,7 @@ npm run serve
 
 1. 把整个目录推到 GitHub 仓库。
 2. 在仓库设置里开启 GitHub Pages，选择 GitHub Actions 部署。
-3. `.github/workflows/daily-update.yml` 会每天北京时间 08:20 运行一次，更新 `data/history/`、`public/data/site-data.json` 与 `public/data/site-data.js`，然后部署静态页面。
+3. `.github/workflows/daily-update.yml` 会每天北京时间 08:20 运行一次，更新 `data/history/`、`public/data/site-data.json` 与 `public/data/site-data.js` 并提交到仓库。GitHub Pages 会在数据提交后自动触发自己的 `pages build and deployment` 来部署静态页面。
 
 如果 GitHub Actions 运行时遇到 B 站 412 风控，可以在仓库 `Settings -> Secrets and variables -> Actions` 增加一个名为 `BILI_COOKIE` 的 secret，填入你浏览器访问 B 站时的 Cookie。脚本会自动使用它，并且在当日搜索完全失败时保留已有快照，避免网站被空数据覆盖。
 
