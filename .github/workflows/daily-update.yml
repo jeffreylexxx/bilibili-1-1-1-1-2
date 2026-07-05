@@ -7,14 +7,19 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
-  group: bilibili-data-update
+  group: bilibili-pages-update
   cancel-in-progress: false
 
 jobs:
-  update-data:
+  update-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -34,8 +39,23 @@ jobs:
           BILI_REQUEST_DELAY_MS: 800
           BILI_COOKIE: ${{ secrets.BILI_COOKIE }}
 
+      - name: Print data summary
+        run: node -e "const d=require('./public/data/site-data.json'); console.log(JSON.stringify({date:d.date,generatedAt:d.generatedAt,minDurationMinutes:d.source.minDurationMinutes,videos:d.metrics.videos,channels:d.metrics.channels,lengthBuckets:d.summaries.lengthBuckets}, null, 2))"
+
       - name: Commit data snapshot
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(data): update bilibili podcast snapshot"
           file_pattern: "data/history/*.json public/data/site-data.json public/data/site-data.js"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
