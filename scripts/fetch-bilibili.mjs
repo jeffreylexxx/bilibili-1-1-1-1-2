@@ -8,9 +8,11 @@ const PUBLIC_DATA_DIR = path.join(ROOT, "public", "data");
 const SITE_DATA = path.join(PUBLIC_DATA_DIR, "site-data.json");
 const SITE_DATA_JS = path.join(PUBLIC_DATA_DIR, "site-data.js");
 
-const pagesPerQuery = Number(process.env.BILI_PAGES_PER_QUERY || 2);
+const pagesPerQuery = Number(process.env.BILI_PAGES_PER_QUERY || 1);
 const channelLimit = Number(process.env.BILI_CHANNEL_LIMIT || 140);
-const requestDelayMs = Number(process.env.BILI_REQUEST_DELAY_MS || 650);
+const requestDelayMs = Number(process.env.BILI_REQUEST_DELAY_MS || 1800);
+const banCooldownMs = Number(process.env.BILI_BAN_COOLDOWN_MS || 12000);
+const minFreshVideos = Number(process.env.BILI_MIN_FRESH_VIDEOS || 80);
 const minDurationSec = 10 * 60;
 const lengthBucketOrder = ["10-30分钟", "30-60分钟", "1-1.5小时", "1.5-2小时", "2-3小时", "3小时以上"];
 
@@ -191,11 +193,16 @@ async function fetchJson(url, tries = 3) {
     if (response.ok && contentType.includes("application/json")) {
       const data = await response.json();
       if (data.code === 0) return data.data;
-      throw new Error(`Bilibili API code ${data.code}: ${data.message}`);
+      const error = new Error(`Bilibili API code ${data.code}: ${data.message}`);
+      error.biliCode = data.code;
+      throw error;
     }
     if (attempt === tries) {
       const body = await response.text();
-      throw new Error(`HTTP ${response.status} for ${url}: ${body.slice(0, 140)}`);
+      const error = new Error(`HTTP ${response.status} for ${url}: ${body.slice(0, 140)}`);
+      error.status = response.status;
+      if (response.status === 412 || body.includes('"code":-412')) error.biliCode = -412;
+      throw error;
     }
     await sleep(600 * attempt);
   }
@@ -204,9 +211,13 @@ async function fetchJson(url, tries = 3) {
 
 async function searchVideos() {
   const videos = new Map();
+  const banStats = new Map();
   for (const keyword of queries) {
+    let keywordBanCount = 0;
     for (const duration of [2, 3, 4]) {
+      let durationBanned = false;
       for (let page = 1; page <= pagesPerQuery; page += 1) {
+        if (durationBanned || keywordBanCount >= 4) break;
         const url = new URL("https://api.bilibili.com/x/web-interface/search/type");
         url.searchParams.set("search_type", "video");
         url.searchParams.set("keyword", keyword);
@@ -248,11 +259,26 @@ async function searchVideos() {
             }
           }
         } catch (error) {
-          console.warn(`[warn] search failed: ${keyword} duration=${duration} page=${page}: ${error.message}`);
+          if (error.biliCode === -412 || error.status === 412) {
+            keywordBanCount += 1;
+            durationBanned = true;
+            banStats.set(keyword, (banStats.get(keyword) || 0) + 1);
+            console.warn(`[warn] Bilibili 412; cooling down and skipping rest of this duration: ${keyword} duration=${duration} page=${page}`);
+            await sleep(banCooldownMs);
+          } else {
+            console.warn(`[warn] search failed: ${keyword} duration=${duration} page=${page}: ${error.message}`);
+          }
         }
         await sleep(requestDelayMs);
       }
     }
+  }
+  if (banStats.size) {
+    console.warn(
+      `[warn] Bilibili 412 summary: ${[...banStats.entries()]
+        .map(([keyword, count]) => `${keyword}=${count}`)
+        .join(", ")}`
+    );
   }
   return [...videos.values()];
 }
@@ -651,8 +677,10 @@ async function main() {
     let videos = await searchVideos();
     console.log(`[info] search yielded ${videos.length} unique long talk videos`);
 
-    if (videos.length === 0 && existsSync(todayPath)) {
-      console.warn("[warn] live search returned 0 videos; preserving and rebuilding from existing snapshot");
+    if (videos.length < minFreshVideos && existsSync(todayPath)) {
+      console.warn(
+        `[warn] live search returned only ${videos.length} videos; preserving and rebuilding from existing snapshot because BILI_MIN_FRESH_VIDEOS=${minFreshVideos}`
+      );
       snapshot = JSON.parse(await readFile(todayPath, "utf8"));
       snapshot.videos = (snapshot.videos || []).filter((video) => video.durationSec >= minDurationSec && isLikelyTalkPodcast(video));
       snapshot.channels = buildChannelsFromExistingStats(snapshot.videos, snapshot.channels || []);
