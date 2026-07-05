@@ -27,7 +27,7 @@ npm run serve
 
 1. 把整个目录推到 GitHub 仓库。
 2. 在仓库设置里开启 GitHub Pages，选择 GitHub Actions 部署。
-3. `.github/workflows/daily-update.yml` 会每天北京时间 08:20 运行一次，更新 `data/history/`、`public/data/site-data.json` 与 `public/data/site-data.js` 并提交到仓库。GitHub Pages 会在数据提交后自动触发自己的 `pages build and deployment` 来部署静态页面。
+3. `.github/workflows/daily-update.yml` 会每天北京时间 08:20 运行一次，更新 `data/history/`、`public/data/site-data.json` 与 `public/data/site-data.js`，提交数据快照，并部署到 GitHub Pages。部署 job 使用 `github-pages` environment。
 
 如果 GitHub Actions 运行时遇到 B 站 412 风控，可以在仓库 `Settings -> Secrets and variables -> Actions` 增加一个名为 `BILI_COOKIE` 的 secret，填入你浏览器访问 B 站时的 Cookie。脚本会自动使用它，并且在当日搜索完全失败时保留已有快照，避免网站被空数据覆盖。
 
