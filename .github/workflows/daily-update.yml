@@ -34,9 +34,11 @@ jobs:
       - name: Update data
         run: npm run update-data
         env:
-          BILI_PAGES_PER_QUERY: 3
+          BILI_PAGES_PER_QUERY: 1
           BILI_CHANNEL_LIMIT: 180
-          BILI_REQUEST_DELAY_MS: 800
+          BILI_REQUEST_DELAY_MS: 2500
+          BILI_BAN_COOLDOWN_MS: 20000
+          BILI_MIN_FRESH_VIDEOS: 80
           BILI_COOKIE: ${{ secrets.BILI_COOKIE }}
 
       - name: Print data summary
